@@ -192,7 +192,7 @@ public class ProjectController {
 	public ResponseEntity<String> autoPromoteTask(@PathVariable final String projectKey,
 											  @PathVariable final String taskKey) throws BusinessServiceException {
 		ProcessStatus currentProcessStatus = taskService.getAutoPromoteStatus(projectKey, taskKey);
-		if (!(null != currentProcessStatus && (currentProcessStatus.getStatus().equals("Rebasing") || currentProcessStatus.getStatus().equals("Classifying") || currentProcessStatus.getStatus().equals("Promoting")))) {
+		if (!(null != currentProcessStatus && (currentProcessStatus.getStatus().equals("Queued") || currentProcessStatus.getStatus().equals("Rebasing") || currentProcessStatus.getStatus().equals("Classifying") || currentProcessStatus.getStatus().equals("Promoting")))) {
 			taskService.autoPromoteTaskToProject(projectKey, taskKey);
 		}
 		return new ResponseEntity<>(HttpStatus.OK);
