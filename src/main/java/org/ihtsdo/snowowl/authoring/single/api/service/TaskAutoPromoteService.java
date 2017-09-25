@@ -12,7 +12,10 @@ import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.*;
 import org.ihtsdo.snowowl.authoring.single.api.rest.ControllerHelper;
 import org.ihtsdo.snowowl.authoring.single.api.review.pojo.BranchState;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import us.monoid.json.JSONException;
@@ -43,29 +46,22 @@ public class TaskAutoPromoteService {
 	@Autowired
 	private ClassificationService classificationService;
 
-	private final LinkedBlockingQueue<AutomatePromoteProcess> autoPromteBlockingQueue = new LinkedBlockingQueue<AutomatePromoteProcess>();
+	private final LinkedBlockingQueue<AutomatePromoteProcess> autoPromoteBlockingQueue = new LinkedBlockingQueue<AutomatePromoteProcess>();
 	private final Map<String, ProcessStatus> autoPromoteStatus;
+
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	public TaskAutoPromoteService() {
 		autoPromoteStatus = new HashMap<>();
 	}
 
-	class AutomatePromoteThreadExecute implements Runnable {
-
-		private AutomatePromoteProcess automatePromoteProcess;
-
-		@Override
-		public void run() {
-			while (true) {
-				try {
-					AutomatePromoteProcess automatePromoteProcess = autoPromteBlockingQueue.take();
-					this.automatePromoteProcess = automatePromoteProcess;
-					doAutoPromoteTaskToProject(automatePromoteProcess.getProjectKey(), automatePromoteProcess.getTaskKey(), automatePromoteProcess.getAuthentication());
-					SecurityContextHolder.getContext().setAuthentication(automatePromoteProcess.getAuthentication());
-				} catch (InterruptedException e) {
-					autoPromoteStatus.put(getAutoPromoteStatusKey(automatePromoteProcess.getProjectKey(), automatePromoteProcess.getTaskKey()), new ProcessStatus("Failed", e.getMessage()));
-				}
-			}
+	@Scheduled(initialDelay = 60_000, fixedDelay = 5_000)
+	private void processAutoPromotionJobs() {
+		try {
+			AutomatePromoteProcess automatePromoteProcess = autoPromoteBlockingQueue.take();
+			doAutoPromoteTaskToProject(automatePromoteProcess.getProjectKey(), automatePromoteProcess.getTaskKey(), automatePromoteProcess.getAuthentication());
+		} catch (InterruptedException e) {
+			logger.warn("Failed to take task auto-promotion job from the queue.", e);
 		}
 	}
 
@@ -73,15 +69,15 @@ public class TaskAutoPromoteService {
 		AutomatePromoteProcess automatePromoteProcess = new AutomatePromoteProcess(SecurityContextHolder.getContext().getAuthentication(), projectKey, taskKey);
 		try {
 			autoPromoteStatus.put(getAutoPromoteStatusKey(automatePromoteProcess.getProjectKey(), automatePromoteProcess.getTaskKey()), new ProcessStatus("Queued", ""));
-			autoPromteBlockingQueue.put(automatePromoteProcess);
+			autoPromoteBlockingQueue.put(automatePromoteProcess);
 		} catch (InterruptedException e) {
 			autoPromoteStatus.put(getAutoPromoteStatusKey(automatePromoteProcess.getProjectKey(), automatePromoteProcess.getTaskKey()), new ProcessStatus("Failed", e.getMessage()));
 		}
 	}
 
-	public synchronized void doAutoPromoteTaskToProject(String projectKey, String taskKey, Authentication authentication){
+	private synchronized void doAutoPromoteTaskToProject(String projectKey, String taskKey, Authentication authentication){
+		SecurityContextHolder.getContext().setAuthentication(authentication);
 		try {
-
 			// Call rebase process
 			Merge merge = new Merge();
 			String mergeId = this.autoRebaseTask(projectKey, taskKey);
@@ -106,6 +102,8 @@ public class TaskAutoPromoteService {
 			}
 		} catch (BusinessServiceException e) {
 			autoPromoteStatus.put(getAutoPromoteStatusKey(projectKey, taskKey), new ProcessStatus("Failed", e.getMessage()));
+		} finally {
+			SecurityContextHolder.getContext().setAuthentication(null);
 		}
 	}
 
@@ -113,15 +111,12 @@ public class TaskAutoPromoteService {
 		notificationService.queueNotification(ControllerHelper.getUsername(), new Notification(projectKey, taskKey, EntityType.Classification, "Running promote authoring task"));
 		autoPromoteStatus.put(getAutoPromoteStatusKey(projectKey, taskKey), new ProcessStatus("Promoting", ""));
 		String taskBranchPath = taskService.getTaskBranchPathUsingCache(projectKey, taskKey);
-		Merge merge = branchService.mergeBranchSync(taskBranchPath, PathHelper.getParentPath(taskBranchPath), mergeId);
-		return merge;
+		return branchService.mergeBranchSync(taskBranchPath, PathHelper.getParentPath(taskBranchPath), mergeId);
 	}
 
-	private org.ihtsdo.snowowl.authoring.single.api.pojo.Status status;
-
 	private org.ihtsdo.snowowl.authoring.single.api.pojo.Status autoValidateTask(String projectKey, String taskKey) throws BusinessServiceException {
-		status = validationService.startValidation(projectKey, taskKey, ControllerHelper.getUsername());
-		if(status == null && !status.equals("COMPLETED")) {
+		Status status = validationService.startValidation(projectKey, taskKey, ControllerHelper.getUsername());
+		if(status == null && !status.equals("COMPLETED")) { // TODO: This will produce a null pointer - also status is not a string so equals will not work
 			return null;
 		}
 		return status;
@@ -159,7 +154,7 @@ public class TaskAutoPromoteService {
 		// Get current task and check branch state
 		AuthoringTask authoringTask = taskService.retrieveTask(projectKey, taskKey);
 		String branchState = authoringTask.getBranchState();
-		if (null != authoringTask) {
+		if (null != authoringTask) {// TODO: if authoring task is null the line above will throw a null pointer
 
 			// Will skip rebase process if the branch state is FORWARD or UP_TO_DATE
 			if ((branchState.equalsIgnoreCase(BranchState.FORWARD.toString()) || branchState.equalsIgnoreCase(BranchState.UP_TO_DATE.toString())) ) {
