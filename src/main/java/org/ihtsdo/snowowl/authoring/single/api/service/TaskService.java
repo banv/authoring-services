@@ -114,6 +114,8 @@ public class TaskService {
 	private LoadingCache<String, ProjectDetails> projectDetailsCache;
 	private final ExecutorService executorService;
 	private static final String UNIT_TEST = "UNIT_TEST";
+	
+	private final LinkedBlockingQueue<AutomatePromoteProcess> autoPromteBlockingQueue = new LinkedBlockingQueue<AutomatePromoteProcess>();
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -393,15 +395,47 @@ public class TaskService {
 		return PathHelper.getTaskPath(getProjectBaseUsingCache(projectKey), projectKey, taskKey);
 	}
 	
+	class AutomatePromoteThreadExecute implements Runnable {
+		
+		private AutomatePromoteProcess automatePromoteProcess;
+
+		@Override
+		public void run() {
+			while (true) {
+				try {
+					AutomatePromoteProcess automatePromoteProcess = autoPromteBlockingQueue.take();
+					this.automatePromoteProcess = automatePromoteProcess;
+					doAutoPromoteTaskToProject(automatePromoteProcess.getProjectKey(), automatePromoteProcess.getTaskKey(), automatePromoteProcess.getAuthentication());
+		            SecurityContextHolder.getContext().setAuthentication(automatePromoteProcess.getAuthentication());
+				} catch (InterruptedException e) {
+					processStatus.setStatus("Failed");
+					processStatus.setMessage(e.getMessage());
+					autoPromoteStatus.put(getAutoPromoteStatusKey(automatePromoteProcess.getProjectKey(), automatePromoteProcess.getTaskKey()), processStatus);
+				}
+			}
+		}
+	}
+	
 	public void autoPromoteTaskToProject(String projectKey, String taskKey) throws BusinessServiceException {
 		final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		executorService.submit(() -> {
-			processStatus.setStatus("Queued");
-			processStatus.setMessage("");
-			SecurityContextHolder.getContext().setAuthentication(authentication);
-			autoPromoteStatus.put(getAutoPromoteStatusKey(projectKey, taskKey), processStatus);
-			doAutoPromoteTaskToProject(projectKey, taskKey, authentication);
-		});
+		AutomatePromoteProcess automatePromoteProcess = new AutomatePromoteProcess();
+		processStatus.setStatus("Queued");
+		processStatus.setMessage("");
+		automatePromoteProcess.setProcessStatus(processStatus);
+		automatePromoteProcess.setAuthentication(authentication);
+		automatePromoteProcess.setProjectKey(projectKey);
+		automatePromoteProcess.setTaskKey(taskKey);
+		
+		try {
+			autoPromteBlockingQueue.put(automatePromoteProcess);
+			autoPromoteStatus.put(getAutoPromoteStatusKey(automatePromoteProcess.getProjectKey(), automatePromoteProcess.getTaskKey()), processStatus);
+			AutomatePromoteThreadExecute automatePromoteThreadExecute = new AutomatePromoteThreadExecute();
+			executorService.execute(automatePromoteThreadExecute);
+		} catch (InterruptedException e) {
+			processStatus.setStatus("Failed");
+			processStatus.setMessage(e.getMessage());
+			autoPromoteStatus.put(getAutoPromoteStatusKey(automatePromoteProcess.getProjectKey(), automatePromoteProcess.getTaskKey()), processStatus);
+		}
 	}
 	
 	public synchronized void doAutoPromoteTaskToProject(String projectKey, String taskKey, Authentication authentication){
