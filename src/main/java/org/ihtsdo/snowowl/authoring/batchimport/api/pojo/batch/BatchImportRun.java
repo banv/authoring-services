@@ -12,18 +12,22 @@ import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.batchimport.api.service.BatchImportFormat;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringProject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class BatchImportRun {
 	
 	private final Logger logger = LoggerFactory.getLogger(getClass());
+	
+	private static final String DEFAULT_MODULE_ID = "defaultModuleId";
 
 	private Map <CSVRecord, BatchImportDetail> allRows = new LinkedHashMap<>();
 	private Map <String, BatchImportConcept> allValidConcepts = new HashMap<>();
 	private BatchImportConcept rootConcept = BatchImportConcept.createRootConcept();
 	private BatchImportRequest importRequest;
 	private BatchImportFormat format;
+	private AuthoringProject project;
 	private UUID id;
 	
 	public static BatchImportRun createRun (UUID batchImportId, BatchImportRequest importRequest) throws BusinessServiceException {
@@ -124,10 +128,19 @@ public class BatchImportRun {
 					.append(detail.isLoaded())
 					.append(",\"")
 					.append(detail.getFailureReason())
-					.append("\",")
+					.append("\",\"")
 					.append(detail.getSctidCreated())
-					.append(",");
-				out.printRecord(thisRow);
+					.append("\",");
+				//Now add the data from the original input file
+				for (int i=0; i<thisRow.size(); i++) {
+					buff.append("\"")
+						.append(thisRow.get(i))
+						.append("\"");
+					if (i<thisRow.size() -1) {
+						buff.append(",");
+					}
+				}
+				buff.append(BatchImportFormat.NEW_LINE);
 			}
 		} catch (Exception e) {
 			logger.error("Exception while outputting Batch Import results as CSV",e);
@@ -137,5 +150,20 @@ public class BatchImportRun {
 		}
 		
 		return buff.toString();
+	}
+
+	public AuthoringProject getProject() {
+		return project;
+	}
+
+	public void setProject(AuthoringProject project) {
+		this.project = project;
+	}
+
+	public String getDefaultModuleId() {
+		if (project != null && getProject().getMetadata().get(DEFAULT_MODULE_ID) != null) {
+			return project.getMetadata().get(DEFAULT_MODULE_ID).toString();
+		}
+		return null;
 	}
 }
