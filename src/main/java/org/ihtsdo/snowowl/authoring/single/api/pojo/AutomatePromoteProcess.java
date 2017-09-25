@@ -6,18 +6,9 @@ public class AutomatePromoteProcess {
 	
 	public AutomatePromoteProcess() {}
 	
-	private ProcessStatus processStatus;
 	private Authentication authentication;
 	private String projectKey;
 	private String taskKey;
-	
-	public ProcessStatus getProcessStatus() {
-		return processStatus;
-	}
-	
-	public void setProcessStatus(ProcessStatus processStatus) {
-		this.processStatus = processStatus;
-	}
 	
 	public Authentication getAuthentication() {
 		return authentication;
@@ -48,7 +39,6 @@ public class AutomatePromoteProcess {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((authentication == null) ? 0 : authentication.hashCode());
-		result = prime * result + ((processStatus == null) ? 0 : processStatus.hashCode());
 		result = prime * result + ((projectKey == null) ? 0 : projectKey.hashCode());
 		result = prime * result + ((taskKey == null) ? 0 : taskKey.hashCode());
 		return result;
@@ -67,11 +57,6 @@ public class AutomatePromoteProcess {
 			if (other.authentication != null)
 				return false;
 		} else if (!authentication.equals(other.authentication))
-			return false;
-		if (processStatus == null) {
-			if (other.processStatus != null)
-				return false;
-		} else if (!processStatus.equals(other.processStatus))
 			return false;
 		if (projectKey == null) {
 			if (other.projectKey != null)
