@@ -6,18 +6,12 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import net.rcarz.jiraclient.Issue;
 import net.rcarz.jiraclient.JiraException;
-import us.monoid.json.JSONException;
-
-import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.snowowl.PathHelper;
 import org.ihtsdo.otf.rest.client.snowowl.pojo.ApiError;
 import org.ihtsdo.otf.rest.client.snowowl.pojo.Merge;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.*;
-import org.ihtsdo.snowowl.authoring.single.api.service.BranchService;
-import org.ihtsdo.snowowl.authoring.single.api.service.TaskAttachment;
-import org.ihtsdo.snowowl.authoring.single.api.service.TaskService;
-import org.ihtsdo.snowowl.authoring.single.api.service.TaskStatus;
+import org.ihtsdo.snowowl.authoring.single.api.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -33,6 +27,9 @@ public class ProjectController {
 
 	@Autowired
 	private TaskService taskService;
+
+	@Autowired
+	private TaskAutoPromoteService taskAutoPromoteService;
 
 	@Autowired
 	private BranchService branchService;
@@ -191,9 +188,9 @@ public class ProjectController {
 	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}/auto-promote", method= RequestMethod.POST)
 	public ResponseEntity<String> autoPromoteTask(@PathVariable final String projectKey,
 											  @PathVariable final String taskKey) throws BusinessServiceException {
-		ProcessStatus currentProcessStatus = taskService.getAutoPromoteStatus(projectKey, taskKey);
+		ProcessStatus currentProcessStatus = taskAutoPromoteService.getAutoPromoteStatus(projectKey, taskKey);
 		if (!(null != currentProcessStatus && (currentProcessStatus.getStatus().equals("Queued") || currentProcessStatus.getStatus().equals("Rebasing") || currentProcessStatus.getStatus().equals("Classifying") || currentProcessStatus.getStatus().equals("Promoting")))) {
-			taskService.autoPromoteTaskToProject(projectKey, taskKey);
+			taskAutoPromoteService.autoPromoteTaskToProject(projectKey, taskKey);
 		}
 		return new ResponseEntity<>(HttpStatus.OK);
 	}
@@ -205,7 +202,7 @@ public class ProjectController {
 	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}/auto-promote/status", method= RequestMethod.GET)
 	public ProcessStatus getAutoPromoteTaskStatus(@PathVariable final String projectKey,
 										   @PathVariable final String taskKey) throws BusinessServiceException {
-		return taskService.getAutoPromoteStatus(projectKey, taskKey);
+		return taskAutoPromoteService.getAutoPromoteStatus(projectKey, taskKey);
 	}
 
 	private ResponseEntity<String> getResponseEntity(Merge merge) {

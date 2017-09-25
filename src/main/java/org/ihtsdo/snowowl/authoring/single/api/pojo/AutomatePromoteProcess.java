@@ -4,12 +4,19 @@ import org.springframework.security.core.Authentication;
 
 public class AutomatePromoteProcess {
 	
-	public AutomatePromoteProcess() {}
-	
 	private Authentication authentication;
 	private String projectKey;
 	private String taskKey;
-	
+
+	public AutomatePromoteProcess() {
+	}
+
+	public AutomatePromoteProcess(Authentication authentication, String projectKey, String taskKey) {
+		this.authentication = authentication;
+		this.projectKey = projectKey;
+		this.taskKey = taskKey;
+	}
+
 	public Authentication getAuthentication() {
 		return authentication;
 	}
