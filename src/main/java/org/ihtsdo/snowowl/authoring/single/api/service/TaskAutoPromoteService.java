@@ -55,7 +55,7 @@ public class TaskAutoPromoteService {
 		autoPromoteStatus = new HashMap<>();
 	}
 
-	@Scheduled(initialDelay = 60000, fixedDelay = 5000)
+	@Scheduled(initialDelay = 60_000, fixedDelay = 5_000)
 	private void processAutoPromotionJobs() {
 		try {
 			AutomatePromoteProcess automatePromoteProcess = autoPromoteBlockingQueue.take();
