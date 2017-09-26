@@ -31,6 +31,12 @@ public class ControllerConfig {
 		logger.debug("{}", e, e);
 		return response(e.getMessage(), HttpStatus.BAD_REQUEST);
 	}
+	
+	@ExceptionHandler(IllegalStateException.class)
+	ResponseEntity<Error> catchIllegalStateException(IllegalStateException e) {
+		logger.debug("{}", e, e);
+		return response(e.getMessage(), HttpStatus.CONFLICT);
+	}
 
 	private ResponseEntity<Error> response(String message, HttpStatus status) {
 		return new ResponseEntity<>(new Error(status, message), status);

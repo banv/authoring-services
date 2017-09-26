@@ -191,7 +191,10 @@ public class ProjectController {
 		ProcessStatus currentProcessStatus = taskAutoPromoteService.getAutoPromoteStatus(projectKey, taskKey);
 		if (!(null != currentProcessStatus && (currentProcessStatus.getStatus().equals("Queued") || currentProcessStatus.getStatus().equals("Rebasing") || currentProcessStatus.getStatus().equals("Classifying") || currentProcessStatus.getStatus().equals("Promoting")))) {
 			taskAutoPromoteService.autoPromoteTaskToProject(projectKey, taskKey);
+		} else {
+			throw new IllegalStateException("Auto-promotion is already running for this task.");
 		}
+		
 		return new ResponseEntity<>(HttpStatus.OK);
 	}
 	
