@@ -20,6 +20,8 @@ import org.springframework.http.converter.ResourceHttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.jms.annotation.EnableJms;
+import org.springframework.scheduling.annotation.EnableScheduling;
+
 import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
@@ -33,6 +35,7 @@ import static springfox.documentation.builders.PathSelectors.regex;
 @SpringBootApplication
 @ImportResource("classpath:services-context.xml")
 @EnableJms
+@EnableScheduling
 @EnableSwagger2
 public class Application {
 
