@@ -158,7 +158,7 @@ public class TaskAutoPromoteService {
 		if (null != authoringTask) {// TODO: if authoring task is null the line above will throw a null pointer
 
 			// Will skip rebase process if the branch state is FORWARD or UP_TO_DATE
-			if ((branchState.equalsIgnoreCase(BranchState.FORWARD.toString()) || branchState.equalsIgnoreCase(BranchState.UP_TO_DATE.toString())) ) {
+			if ((branchState.equalsIgnoreCase(BranchState.FORWARD.toString()) || branchState.equalsIgnoreCase(BranchState.UP_TO_DATE.toString()))) {
 				return null;
 			} else {
 				try {
@@ -213,11 +213,11 @@ public class TaskAutoPromoteService {
 
 	public ProcessStatus getAutoPromoteStatus(String projectKey, String taskKey) throws BusinessServiceException {
 		ProcessStatus processStatus = autoPromoteStatus.get(getAutoPromoteStatusKey(projectKey, taskKey));
-		if (null != processStatus && processStatus.getStatus().equalsIgnoreCase("Classified with results")) {
-			String branchPath = taskService.getTaskBranchPathUsingCache(projectKey, taskKey);
-			String latestClassificationJson;
-			try {
-				latestClassificationJson = classificationService.getLatestClassification(branchPath);
+		AuthoringTask authoringTask = taskService.retrieveTask(projectKey, taskKey);
+		String branchState = authoringTask.getBranchState();
+		if (null != processStatus && null != authoringTask) {
+			if (processStatus.getStatus().equalsIgnoreCase("Classified with results")) {
+				String latestClassificationJson = authoringTask.getLatestClassificationJson();
 				if (null != latestClassificationJson) {
 					JSONObject json = new JSONObject(latestClassificationJson);
 					String status = (String) json.get("status");
@@ -225,9 +225,10 @@ public class TaskAutoPromoteService {
 						autoPromoteStatus.remove(getAutoPromoteStatusKey(projectKey, taskKey));
 					}
 				}
-			} catch (RestClientException e) {
-				throw new BusinessServiceException("Failed to get status of task key ." + getAutoPromoteStatusKey(projectKey, taskKey));
+			} else if (processStatus.getStatus().equalsIgnoreCase("Rebased with conflicts") && (branchState.equalsIgnoreCase(BranchState.FORWARD.toString()) || branchState.equalsIgnoreCase(BranchState.UP_TO_DATE.toString()))) {
+				autoPromoteStatus.remove(getAutoPromoteStatusKey(projectKey, taskKey));
 			}
+			
 		}
 		return autoPromoteStatus.get(getAutoPromoteStatusKey(projectKey, taskKey));
 	}
