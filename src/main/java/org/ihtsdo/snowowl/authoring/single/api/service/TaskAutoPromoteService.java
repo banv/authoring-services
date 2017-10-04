@@ -12,6 +12,7 @@ import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.*;
 import org.ihtsdo.snowowl.authoring.single.api.rest.ControllerHelper;
 import org.ihtsdo.snowowl.authoring.single.api.review.pojo.BranchState;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -210,7 +211,24 @@ public class TaskAutoPromoteService {
 		return null;
 	}
 
-	public ProcessStatus getAutoPromoteStatus(String projectKey, String taskKey) {
+	public ProcessStatus getAutoPromoteStatus(String projectKey, String taskKey) throws BusinessServiceException {
+		ProcessStatus processStatus = autoPromoteStatus.get(getAutoPromoteStatusKey(projectKey, taskKey));
+		if (null != processStatus && processStatus.getStatus().equalsIgnoreCase("Classified with results")) {
+			String branchPath = taskService.getTaskBranchPathUsingCache(projectKey, taskKey);
+			String latestClassificationJson;
+			try {
+				latestClassificationJson = classificationService.getLatestClassification(branchPath);
+				if (null != latestClassificationJson) {
+					JSONObject json = new JSONObject(latestClassificationJson);
+					String status = (String) json.get("status");
+					if (status.equalsIgnoreCase("SAVED")) {
+						autoPromoteStatus.remove(getAutoPromoteStatusKey(projectKey, taskKey));
+					}
+				}
+			} catch (RestClientException e) {
+				throw new BusinessServiceException("Failed to get status of task key ." + getAutoPromoteStatusKey(projectKey, taskKey));
+			}
+		}
 		return autoPromoteStatus.get(getAutoPromoteStatusKey(projectKey, taskKey));
 	}
 
