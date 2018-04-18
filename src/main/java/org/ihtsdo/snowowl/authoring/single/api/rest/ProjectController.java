@@ -34,6 +34,9 @@ public class ProjectController {
 	@Autowired
 	private BranchService branchService;
 
+	@Autowired
+	private NotificationService notificationService;
+	
 	@ApiOperation(value="List authoring Projects")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
@@ -74,6 +77,9 @@ public class ProjectController {
 		if (merge.getStatus() == Merge.Status.COMPLETED) {
 			List<Issue> promotedIssues = taskService.getTaskIssues(projectKey, TaskStatus.PROMOTED);
 			taskService.stateTransition(promotedIssues, TaskStatus.COMPLETED);
+			
+			String msg = "Project successfully promoted";
+			notificationService.queueNotification(ControllerHelper.getUsername(), new Notification(projectKey, null, EntityType.Promotion, msg));
 		}
 		return getResponseEntity(merge);
 	}
@@ -177,6 +183,9 @@ public class ProjectController {
 		Merge merge = branchService.mergeBranchSync(taskBranchPath, PathHelper.getParentPath(taskBranchPath), mergeRequest.getSourceReviewId());
 		if (merge.getStatus() == Merge.Status.COMPLETED) {
 			taskService.stateTransition(projectKey, taskKey, TaskStatus.PROMOTED);
+			
+			String msg = "Task successfully promoted";
+			notificationService.queueNotification(ControllerHelper.getUsername(), new Notification(projectKey, taskKey, EntityType.Promotion, msg));
 		}
 		return getResponseEntity(merge);
 	}
