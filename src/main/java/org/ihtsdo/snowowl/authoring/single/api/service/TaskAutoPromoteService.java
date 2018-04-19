@@ -109,14 +109,12 @@ public class TaskAutoPromoteService {
 	}
 
 	private Merge autoPromoteTask(String projectKey, String taskKey, String mergeId) throws BusinessServiceException {
-		notificationService.queueNotification(ControllerHelper.getUsername(), new Notification(projectKey, taskKey, EntityType.Classification, "Running promote authoring task"));
 		autoPromoteStatus.put(getAutoPromoteStatusKey(projectKey, taskKey), new ProcessStatus("Promoting", ""));
 		String taskBranchPath = taskService.getTaskBranchPathUsingCache(projectKey, taskKey);
 		return branchService.mergeBranchSync(taskBranchPath, PathHelper.getParentPath(taskBranchPath), mergeId);
 	}
 
 	private Classification autoClassificationTask(String projectKey, String taskKey) throws BusinessServiceException {
-		notificationService.queueNotification(ControllerHelper.getUsername(), new Notification(projectKey, taskKey, EntityType.Classification, "Running classification authoring task"));
 		autoPromoteStatus.put(getAutoPromoteStatusKey(projectKey, taskKey), new ProcessStatus("Classifying", ""));
 		String branchPath = taskService.getTaskBranchPathUsingCache(projectKey, taskKey);
 		try {
@@ -140,7 +138,6 @@ public class TaskAutoPromoteService {
 
 	private String autoRebaseTask(String projectKey, String taskKey) throws BusinessServiceException {
 
-		notificationService.queueNotification(ControllerHelper.getUsername(), new Notification(projectKey, taskKey, EntityType.Rebase, "Running auto rebase authoring task"));
 		autoPromoteStatus.put(getAutoPromoteStatusKey(projectKey, taskKey), new ProcessStatus("Rebasing", ""));
 		String taskBranchPath = taskService.getTaskBranchPathUsingCache(projectKey, taskKey);
 
