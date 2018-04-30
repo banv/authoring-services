@@ -13,6 +13,7 @@ import org.ihtsdo.snowowl.authoring.single.api.security.RequestHeaderAuthenticat
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.web.HttpMessageConverters;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.cloud.consul.ConsulProperties;
@@ -40,6 +41,7 @@ import static springfox.documentation.builders.PathSelectors.regex;
 public class Application {
 
 	@Bean
+	@ConditionalOnProperty(name = "spring.cloud.consul.config.enabled", matchIfMissing = true)
 	public ConsulClient consulClient(ConsulProperties consulProperties, @Value("${spring.cloud.consul.path}") String path) {
 		return new ConsulClient(ConsulRawClient.Builder.builder()
 				.setHost(consulProperties.getHost())
