@@ -12,18 +12,13 @@ import net.rcarz.jiraclient.User;
 import net.sf.json.JSON;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
-import us.monoid.json.JSONException;
-
 import org.apache.activemq.command.ActiveMQQueue;
-import org.apache.log4j.Level;
 import org.ihtsdo.otf.jms.MessagingHelper;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.snowowl.PathHelper;
-import org.ihtsdo.otf.rest.client.snowowl.pojo.ApiError;
-import org.ihtsdo.otf.rest.client.snowowl.pojo.Branch;
-import org.ihtsdo.otf.rest.client.snowowl.pojo.ClassificationResults;
-import org.ihtsdo.otf.rest.client.snowowl.pojo.Merge;
-import org.ihtsdo.otf.rest.client.snowowl.pojo.MergeReviewsResults;
+import org.ihtsdo.otf.rest.client.snowowl.SnowOwlRestClient;
+import org.ihtsdo.otf.rest.client.snowowl.SnowOwlRestClientFactory;
+import org.ihtsdo.otf.rest.client.snowowl.pojo.*;
 import org.ihtsdo.otf.rest.exception.BadRequestException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.ResourceNotFoundException;
@@ -35,17 +30,16 @@ import org.ihtsdo.snowowl.authoring.single.api.review.service.TaskMessagesDetail
 import org.ihtsdo.snowowl.authoring.single.api.service.jira.ImpersonatingJiraClientFactory;
 import org.ihtsdo.snowowl.authoring.single.api.service.jira.JiraHelper;
 import org.ihtsdo.snowowl.authoring.single.api.service.util.TimerUtil;
-import org.ihtsdo.otf.rest.client.snowowl.SnowOwlRestClient;
-import org.ihtsdo.otf.rest.client.snowowl.SnowOwlRestClientFactory;
 import org.ihtsdo.sso.integration.SecurityUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.event.Level;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import static org.ihtsdo.otf.rest.client.snowowl.pojo.MergeReviewsResults.MergeReviewStatus.CURRENT;
+import us.monoid.json.JSONException;
 
 import javax.annotation.PreDestroy;
 import javax.jms.JMSException;
@@ -54,6 +48,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static org.ihtsdo.otf.rest.client.snowowl.pojo.MergeReviewsResults.MergeReviewStatus.CURRENT;
 
 public class TaskService {
 

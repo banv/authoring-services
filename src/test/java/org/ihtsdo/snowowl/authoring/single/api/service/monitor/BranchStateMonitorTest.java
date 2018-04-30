@@ -1,7 +1,7 @@
 package org.ihtsdo.snowowl.authoring.single.api.service.monitor;
 
+import org.junit.Assert;
 import org.junit.Test;
-import org.springframework.util.Assert;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -10,7 +10,7 @@ public class BranchStateMonitorTest {
 
 	@Test
 	public void testEquals() throws Exception {
-		Assert.isTrue(newMon().equals(newMon()));
+		Assert.assertTrue(newMon().equals(newMon()));
 	}
 
 	@Test
@@ -18,7 +18,7 @@ public class BranchStateMonitorTest {
 		Map<Class, Monitor> map = new HashMap<>();
 		final BranchStateMonitor monitor = newMon();
 		map.put(monitor.getClass(), monitor);
-		Assert.isTrue(map.containsValue(newMon()));
+		Assert.assertTrue(map.containsValue(newMon()));
 	}
 
 	private BranchStateMonitor newMon() {
