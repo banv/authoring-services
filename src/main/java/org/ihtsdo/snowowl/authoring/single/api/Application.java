@@ -14,7 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.http.HttpMessageConverters;
+import org.springframework.boot.autoconfigure.web.HttpMessageConverters;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.cloud.consul.ConsulProperties;
 import org.springframework.context.annotation.Bean;
